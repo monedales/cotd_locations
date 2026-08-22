@@ -1,6 +1,8 @@
 import cv2  # type: ignore
 from numpy import ndarray
 import pytesseract
+import yt_dlp
+from datetime import datetime
 
 
 def load_image_grayscale(path: str) -> ndarray:
@@ -76,5 +78,24 @@ def extract_balloon_text(image: ndarray, rect: tuple) -> str:
     return text
 
 
+def download_video(url: str) -> str:
+    today = datetime.now()
+    output_path = ("../media/videos/" + today.strftime("%Y-%m-%d") + ".mp4")
+
+    options = {
+        "format": "bestvideo[height<=480]+bestaudio/best[height<=480]",
+        "merge_output_format": "mp4",
+        "outtmpl": "../media/videos/"
+        + today.strftime("%Y-%m-%d") + ".%(ext)s",
+    }
+
+    with yt_dlp.YoutubeDL(options) as ydl:
+        ydl.download([url])
+
+    return output_path
+
+
 if __name__ == "__main__":
     run_pipeline("../media/screenshots/message-coco.png")
+    video_path = download_video("https://www.youtube.com/watch?v=tdHbQSbinhs")
+    print(video_path)
