@@ -1,91 +1,23 @@
 import cv2  # type: ignore
-from numpy import ndarray
-import pytesseract
 import yt_dlp
 from datetime import datetime
-from typing import TypeAlias
 import os
 
-MS_PER_SECOND = 1000
-ROI_X1, ROI_Y1 = 150, 100
-ROI_X2, ROI_Y2 = 470, 170
-MIN_TEXT_LENGTH = 10
-Rect: TypeAlias = tuple[int, int, int, int]
-TimestampData: TypeAlias = list[tuple[int, Rect]]
-TimestampTextData: TypeAlias = list[tuple[int, Rect, str]]
-
-
-def load_image_grayscale(path: str) -> ndarray:
-    image = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-    return image
-
-
-def crop_fixed_region(
-    image: ndarray, y1: int, y2: int, x1: int, x2: int
-) -> ndarray:
-    return image[y1:y2, x1:x2]
-
-
-def find_contours_from_grayscale(
-    image: ndarray, thresh_val: int, max_val: int
-) -> list:
-    _ret, thresh_img = cv2.threshold(
-        image, thresh_val, max_val, cv2.THRESH_BINARY
-    )
-    contours, _hierarchy = cv2.findContours(
-        thresh_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-    )
-    return contours, thresh_img
-
-
-def find_balloon_rect(
-    contours: list,
-    w_min: int,
-    w_max: int,
-    h_min: int,
-    h_max: int,
-) -> tuple | None:
-    for contour in contours:
-        x, y, largura, altura = cv2.boundingRect(contour)
-        if w_min <= largura <= w_max and \
-           h_min <= altura <= h_max:
-            return (x, y, largura, altura)
-    return None
-
-
-def show_image(image: ndarray, window_name: str) -> None:
-    cv2.imshow(window_name, image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-
-def run_pipeline(path: str) -> tuple | None:
-    image = load_image_grayscale(path)
-    contours, thresh_img = find_contours_from_grayscale(
-        image, thresh_val=150, max_val=255
-    )
-    rect = find_balloon_rect(
-        contours,
-        w_min=350, w_max=420,
-        h_min=80, h_max=120,
-    )
-    show_image(thresh_img, "Binary Image")
-    print(rect)
-
-    if rect is not None:
-        balloon_text = extract_balloon_text(image, rect)
-        print(balloon_text)
-
-    return rect
-
-
-def extract_balloon_text(image: ndarray, rect: tuple) -> str:
-    x, y, width, height = rect
-    x1, y1 = x, y
-    x2, y2 = x + width, y + height
-    balloon_crop = crop_fixed_region(image, y1, y2, x1, x2)
-    text = pytesseract.image_to_string(balloon_crop)
-    return text
+from consts import (
+    MS_PER_SECOND,
+    MIN_TEXT_LENGTH,
+    BALLOON_ROI_X1,
+    BALLOON_ROI_Y1,
+    BALLOON_ROI_X2,
+    BALLOON_ROI_Y2,
+)
+from data_types import TimestampData, TimestampTextData
+from image_ops import (
+    crop_fixed_region,
+    find_contours_from_grayscale,
+    find_balloon_rect,
+    extract_balloon_text,
+)
 
 
 def download_video(url: str) -> str:
@@ -127,7 +59,9 @@ def find_monsters_frames(
         succeed, frame = capture.read()
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         roi_frame = crop_fixed_region(
-            gray_frame, ROI_Y1, ROI_Y2, ROI_X1, ROI_X2
+            gray_frame,
+            BALLOON_ROI_Y1, BALLOON_ROI_Y2,
+            BALLOON_ROI_X1, BALLOON_ROI_X2,
         )
         contours, thresh_img = find_contours_from_grayscale(
             roi_frame, thresh_val=150, max_val=255
@@ -139,7 +73,11 @@ def find_monsters_frames(
         )
         if roi_rect is not None:
             roi_x, roi_y, width, height = roi_rect
-            rect = (roi_x + ROI_X1, roi_y + ROI_Y1, width, height)
+            rect = (
+                roi_x + BALLOON_ROI_X1,
+                roi_y + BALLOON_ROI_Y1,
+                width, height,
+            )
             found_frames.append((current_ms, rect))
         current_ms = current_ms + intval_ms
     capture.release()
@@ -186,16 +124,3 @@ def save_debug_crops(
         filename = f"{output_dir}/{timestamp_ms}.png"
         cv2.imwrite(filename, crop)
     capture.release()
-
-
-if __name__ == "__main__":
-    # run_pipeline("../media/screenshots/message-coco.png")
-    video_path = download_video("https://www.youtube.com/watch?v=tdHbQSbinhs")
-    print(video_path)
-    found_frames = find_monsters_frames(video_path, 80500, 500)
-    save_debug_crops(video_path, found_frames)
-    filtered_frames = filter_frames_with_text(video_path, found_frames)
-    print(f"Antes do filtro: {len(found_frames)}")
-    print(f"Depois do filtro: {len(filtered_frames)}")
-    for item in filtered_frames:
-        print(item)
