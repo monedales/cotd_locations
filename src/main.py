@@ -1,3 +1,4 @@
+from consts import TIME_LIMIT_MS
 from image_ops import (
     load_image_grayscale,
     find_contours_from_grayscale,
@@ -6,10 +7,14 @@ from image_ops import (
     extract_balloon_text,
 )
 from video_ops import (
+    clean_debug_screenshots,
     download_video,
     find_monsters_frames,
     save_debug_crops,
     filter_frames_with_text,
+    reduce_duplicates,
+    extract_monsters_locations,
+    save_monster_locations,
 )
 
 
@@ -35,12 +40,25 @@ def run_pipeline(path: str) -> tuple | None:
 
 if __name__ == "__main__":
     # run_pipeline("../media/screenshots/message-coco.png")
-    video_path = download_video("https://www.youtube.com/watch?v=tdHbQSbinhs")
+    clean_debug_screenshots()
+    video_path = download_video("https://www.youtube.com/watch?v=1ihlsS2nX48")
     print(video_path)
     found_frames = find_monsters_frames(video_path, 80500, 500)
     save_debug_crops(video_path, found_frames)
     filtered_frames = filter_frames_with_text(video_path, found_frames)
     print(f"Antes do filtro: {len(found_frames)}")
     print(f"Depois do filtro: {len(filtered_frames)}")
-    for item in filtered_frames:
+
+    reduced_frames = reduce_duplicates(filtered_frames, TIME_LIMIT_MS)
+    print(f"Depois do agrupamento: {len(reduced_frames)}")
+
+    reduced_for_crop = []
+    for item in reduced_frames:
+        reduced_for_crop.append((item[0], item[1]))
+    save_debug_crops(video_path, reduced_for_crop, subfolder="final")
+
+    monster_locations = extract_monsters_locations(video_path, reduced_frames)
+    save_monster_locations(video_path, monster_locations, subfolder="screenshots")
+
+    for item in reduced_frames:
         print(item)

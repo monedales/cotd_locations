@@ -2,6 +2,8 @@ import cv2  # type: ignore
 import yt_dlp
 from datetime import datetime
 import os
+import re
+import shutil
 
 from consts import (
     MS_PER_SECOND,
@@ -10,14 +12,27 @@ from consts import (
     BALLOON_ROI_Y1,
     BALLOON_ROI_X2,
     BALLOON_ROI_Y2,
+    SCREENSHOTS_DIR,
+    VIDEO_FOLDER_NAME_PATTERN,
 )
-from data_types import TimestampData, TimestampTextData
+from data_types import TimestampData, TimestampTextData, TimestampImageData
 from image_ops import (
     crop_fixed_region,
     find_contours_from_grayscale,
     find_balloon_rect,
     extract_balloon_text,
 )
+
+
+def clean_debug_screenshots(base_dir: str = SCREENSHOTS_DIR) -> None:
+    if not os.path.isdir(base_dir):
+        return
+    for entry in os.listdir(base_dir):
+        entry_path = os.path.join(base_dir, entry)
+        is_video_folder = re.fullmatch(VIDEO_FOLDER_NAME_PATTERN, entry)
+        if os.path.isdir(entry_path) and is_video_folder:
+            shutil.rmtree(entry_path)
+            os.makedirs(entry_path)
 
 
 def download_video(url: str) -> str:
@@ -107,10 +122,13 @@ def filter_frames_with_text(
 
 def save_debug_crops(
         video_path: str,
-        found_frames: TimestampData
+        found_frames: TimestampData,
+        subfolder: str = ""
         ) -> None:
     video_name = os.path.splitext(os.path.basename(video_path))[0]
     output_dir = f"../media/screenshots/{video_name}"
+    if subfolder:
+        output_dir = f"{output_dir}/{subfolder}"
     os.makedirs(output_dir, exist_ok=True)
 
     capture = cv2.VideoCapture(video_path)
@@ -124,3 +142,59 @@ def save_debug_crops(
         filename = f"{output_dir}/{timestamp_ms}.png"
         cv2.imwrite(filename, crop)
     capture.release()
+
+
+def extract_monsters_locations(
+        video_path: str,
+        frames: TimestampTextData
+        ) -> TimestampImageData:
+    capture = cv2.VideoCapture(video_path)
+    locations = []
+    for timestamp_ms, _rect, _text in frames:
+        capture.set(cv2.CAP_PROP_POS_MSEC, timestamp_ms)
+        succeed, frame = capture.read()
+        if not succeed:
+            continue
+        locations.append((timestamp_ms, frame))
+    capture.release()
+    return locations
+
+
+def save_monster_locations(
+        video_path: str,
+        locations: TimestampImageData,
+        subfolder: str = ""
+        ) -> None:
+    video_name = os.path.splitext(os.path.basename(video_path))[0]
+    output_dir = f"../media/screenshots/{video_name}"
+    if subfolder:
+        output_dir = f"{output_dir}/{subfolder}"
+    os.makedirs(output_dir, exist_ok=True)
+
+    for timestamp_ms, frame in locations:
+        filename = f"{output_dir}/{timestamp_ms}.png"
+        cv2.imwrite(filename, frame)
+
+
+def reduce_duplicates(
+        frames: TimestampTextData,
+        time_limit_ms: int
+        ) -> TimestampTextData:
+    groups = []
+    current_group = [frames[0]]
+
+    for item in frames[1:]:
+        last_timestamp = current_group[-1][0]
+        if item[0] - last_timestamp <= time_limit_ms:
+            current_group.append(item)
+        else:
+            groups.append(current_group)
+            current_group = [item]
+
+    groups.append(current_group)
+
+    reduced_frames = []
+    for group in groups:
+        reduced_frames.append(group[-1])
+
+    return reduced_frames
