@@ -3,7 +3,6 @@ import yt_dlp
 from datetime import datetime
 import os
 import re
-import shutil
 
 from consts import (
     MS_PER_SECOND,
@@ -14,8 +13,9 @@ from consts import (
     BALLOON_ROI_Y2,
     SCREENSHOTS_DIR,
     VIDEO_FOLDER_NAME_PATTERN,
+    MAP_MONSTER_ORDER
 )
-from data_types import TimestampData, TimestampTextData, TimestampImageData
+from data_types import TimestampData, TimestampTextData, TimestampImageData, TimestampMapData
 from image_ops import (
     crop_fixed_region,
     find_contours_from_grayscale,
@@ -31,8 +31,10 @@ def clean_debug_screenshots(base_dir: str = SCREENSHOTS_DIR) -> None:
         entry_path = os.path.join(base_dir, entry)
         is_video_folder = re.fullmatch(VIDEO_FOLDER_NAME_PATTERN, entry)
         if os.path.isdir(entry_path) and is_video_folder:
-            shutil.rmtree(entry_path)
-            os.makedirs(entry_path)
+            for inner_entry in os.listdir(entry_path):
+                inner_path = os.path.join(entry_path, inner_entry)
+                if os.path.isfile(inner_path):
+                    os.remove(inner_path)
 
 
 def download_video(url: str) -> str:
@@ -198,3 +200,40 @@ def reduce_duplicates(
         reduced_frames.append(group[-1])
 
     return reduced_frames
+
+
+def separate_monsters_group(frames: TimestampTextData,
+                            monsters: int) -> TimestampTextData:
+    len_list = len(frames)
+    time_gap = []
+    for i in range(1, len_list):
+        gap = frames[i][0] - frames[i-1][0]
+        time_gap.append((gap, i))
+    sorted_gaps = sorted(time_gap, reverse=True)
+    cuts = monsters - 1
+    top_gaps = sorted_gaps[:cuts]
+    cut_pos = []
+    for item in top_gaps:
+        cut_pos.append(item[1])
+    sorted_cut_pos = sorted(cut_pos)
+    boundaries = [0] + sorted_cut_pos + [len_list]
+    groups = []
+    for idx in range(monsters):
+        start = boundaries[idx]
+        end = boundaries[idx + 1]
+        piece = frames[start:end]
+        groups.append(piece)
+    final_frames = []
+    for group in groups:
+        final_frames.append(group[-1])
+    return final_frames
+
+
+def assign_monsters_map(frames: TimestampTextData) -> TimestampMapData:
+    result = []
+    for i, item in enumerate(frames):
+        map_data = MAP_MONSTER_ORDER[i]
+        timestamp, rect, text = item
+        result.append((timestamp, rect, text, map_data))
+    return result
+

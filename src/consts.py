@@ -7,3 +7,14 @@ BALLOON_ROI_X2, BALLOON_ROI_Y2 = 470, 170
 
 SCREENSHOTS_DIR = "../media/screenshots"
 VIDEO_FOLDER_NAME_PATTERN = r"^\d{4}-\d{2}-\d{2}$"
+
+MAP_MONSTER_ORDER = [
+    ("Paradise Island", "Shredder"),
+    ("Great Lakes", "Bessie"),
+    ("Costa Rica", "Don Pedro"),
+    ("Alaska", "Kraken"),
+    ("Australia", "Bunyip"),
+    ("Scotland", "Nessie"),
+    ("Thailand", "Naga"),
+    ("Amazon", "Boiuna"),
+]

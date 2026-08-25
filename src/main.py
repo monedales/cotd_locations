@@ -13,6 +13,8 @@ from video_ops import (
     save_debug_crops,
     filter_frames_with_text,
     reduce_duplicates,
+    separate_monsters_group,
+    assign_monsters_map,
     extract_monsters_locations,
     save_monster_locations,
 )
@@ -41,7 +43,7 @@ def run_pipeline(path: str) -> tuple | None:
 if __name__ == "__main__":
     # run_pipeline("../media/screenshots/message-coco.png")
     clean_debug_screenshots()
-    video_path = download_video("https://www.youtube.com/watch?v=1ihlsS2nX48")
+    video_path = download_video("https://www.youtube.com/watch?v=tdHbQSbinhs&t=209s")
     print(video_path)
     found_frames = find_monsters_frames(video_path, 80500, 500)
     save_debug_crops(video_path, found_frames)
@@ -52,13 +54,18 @@ if __name__ == "__main__":
     reduced_frames = reduce_duplicates(filtered_frames, TIME_LIMIT_MS)
     print(f"Depois do agrupamento: {len(reduced_frames)}")
 
+    separated_frames = separate_monsters_group(reduced_frames, 8)
+    print(f"Depois da separação por mapa: {len(separated_frames)}")
+
+    mapped_frames = assign_monsters_map(separated_frames)
+    print("Associação mapa/monstro:")
+    for item in mapped_frames:
+        print(item)
+
     reduced_for_crop = []
-    for item in reduced_frames:
+    for item in separated_frames:
         reduced_for_crop.append((item[0], item[1]))
     save_debug_crops(video_path, reduced_for_crop, subfolder="final")
 
-    monster_locations = extract_monsters_locations(video_path, reduced_frames)
+    monster_locations = extract_monsters_locations(video_path, separated_frames)
     save_monster_locations(video_path, monster_locations, subfolder="screenshots")
-
-    for item in reduced_frames:
-        print(item)
