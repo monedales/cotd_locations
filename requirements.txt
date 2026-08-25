@@ -2,3 +2,4 @@ pytesseract;
 opencv-python;
 pillow;
 yt-dlp;
+pytest;
