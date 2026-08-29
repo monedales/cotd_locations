@@ -19,3 +19,15 @@ MAP_MONSTER_ORDER = [
     ("Thailand", "Naga"),
     ("Amazon", "Boiuna"),
 ]
+
+MONSTER_LOCATIONS_DIR = "../media/monster_locations"
+MONSTER_REFERENCE_IMAGE = {
+    "Shredder": "shredder.png",
+    "Bessie": "bessie.jpeg",
+    "Don Pedro": "donpedro.jpeg",
+    "Kraken": "kraken.jpeg",
+    "Bunyip": "bunyip.jpeg",
+    "Nessie": "nessie.jpeg",
+    "Naga": "naga.jpeg",
+    "Boiuna": "boiuna.jpeg",
+}
