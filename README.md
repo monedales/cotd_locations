@@ -1,0 +1,101 @@
+# 🐟 Creatures of the Deep: Monster Location Notifier
+
+## Description
+
+Python pipeline that detects the monster reveal moment on each of the
+game's 8 maps from the daily video posted on Browind's YouTube channel,
+and prepares ready-to-send screenshots plus map and monster
+identification for a Discord notification to a game clan, without
+anyone needing to watch the full video.
+
+## Instructions
+
+### Dependencies
+
+- Python 3.14
+- Homebrew packages: `tesseract`, `ffmpeg`
+
+### Setup
+
+```bash
+python3.14 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+brew install tesseract ffmpeg
+```
+
+### Running
+
+```bash
+cd src
+python3.14 main.py
+```
+
+## Project Structure
+
+```
+cotd_locations/
+├── src/
+│   ├── main.py            entry point: runs the full pipeline
+│   ├── video_ops.py       download, scanning, dedup, map assignment
+│   ├── image_ops.py       generic image ops (crop, contours, OCR)
+│   ├── data_types.py      shared type aliases
+│   └── consts.py          calibration constants
+│
+└── data/
+    └── spot_table.json    daily monster-spot codes shared by the
+                            community
+```
+
+## Pipeline
+
+```mermaid
+flowchart TD
+    A["download_video(url)"] --> B["find_monsters_frames<br/>(geometric detection in the ROI)"]
+    B --> C["filter_frames_with_text<br/>(OCR text filter)"]
+    C --> D["reduce_duplicates<br/>(time-proximity dedup)"]
+    D --> E["separate_monsters_group<br/>(split at the largest gaps)"]
+    E --> F["assign_monsters_map<br/>(sequential map/monster assignment)"]
+    F --> G["extract_monsters_locations<br/>(balloon + context screenshot)"]
+    G --> H["save_monster_locations<br/>(saved to disk)"]
+
+    style A fill:#ece4f7,color:#3b2a54
+    style H fill:#ece4f7,color:#3b2a54
+```
+
+## Glossary
+
+- **yt-dlp**: command-line tool (used here as a Python library) to
+  download videos from YouTube; also used to fetch video metadata,
+  like the upload date, without downloading the file
+- **OCR (Optical Character Recognition)**: technology that reads text
+  from images (used here via Tesseract, to read the balloon message)
+- **ROI (Region of Interest)**: a fixed region of the screen where the
+  search is restricted, to avoid false positives from unrelated areas
+- **Geometric detection**: finding shapes in an image based on contour
+  size and proportion, without relying on fixed pixel coordinates
+- **Threshold (binary thresholding)**: converting a grayscale image
+  into pure black-and-white, based on a brightness cutoff, to simplify
+  shape detection
+- **Deduplication**: removing repeated detections of the same
+  real-world event, so only one representative screenshot per map is
+  kept
+
+## Resources
+
+- [OpenCV](https://opencv.org/): geometric detection, image processing
+- [Tesseract](https://github.com/tesseract-ocr/tesseract) /
+  [pytesseract](https://github.com/madmaze/pytesseract): OCR
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp): video download
+- [ffmpeg](https://ffmpeg.org/): video and audio handling
+
+## Status
+
+- [x] Environment setup
+- [x] Balloon detection (manual crop to geometric detection)
+- [x] Video automation (download, OCR filter, deduplication)
+- [x] Map/monster assignment by sequential order
+- [ ] Refinements (visual context, video identity fix, nightly
+      automation)
+- [ ] Discord integration
+- [ ] Automated test suite
