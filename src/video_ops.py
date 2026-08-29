@@ -1,6 +1,6 @@
 import cv2  # type: ignore
 import yt_dlp
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import re
 
@@ -38,14 +38,20 @@ def clean_debug_screenshots(base_dir: str = SCREENSHOTS_DIR) -> None:
 
 
 def download_video(url: str) -> str:
-    today = datetime.now()
-    output_path = ("../media/videos/" + today.strftime("%Y-%m-%d") + ".mp4")
+    with yt_dlp.YoutubeDL() as ydl:
+        info = ydl.extract_info(url, download=False)
+
+    original_data = info.get("upload_date")
+    format_data = datetime.strptime(original_data, "%Y%m%d")
+    new_data = format_data + timedelta(days=1)
+    date_str = new_data.strftime("%Y-%m-%d")
+
+    output_path = ("../media/videos/" + date_str + ".mp4")
 
     options = {
         "format": "bestvideo[height<=480]+bestaudio/best[height<=480]",
         "merge_output_format": "mp4",
-        "outtmpl": "../media/videos/"
-        + today.strftime("%Y-%m-%d") + ".%(ext)s",
+        "outtmpl": "../media/videos/" + date_str + ".%(ext)s",
     }
     if not os.path.exists(output_path):
         with yt_dlp.YoutubeDL(options) as ydl:
@@ -148,11 +154,17 @@ def save_debug_crops(
 
 def extract_monsters_locations(
         video_path: str,
-        frames: TimestampTextData
+        frames: TimestampTextData,
+        context_ms: int
         ) -> TimestampImageData:
     capture = cv2.VideoCapture(video_path)
     locations = []
     for timestamp_ms, _rect, _text in frames:
+        context_timestamp_ms = timestamp_ms - context_ms
+        capture.set(cv2.CAP_PROP_POS_MSEC, context_timestamp_ms)
+        succeed, context_frame = capture.read()
+        if succeed:
+            locations.append((context_timestamp_ms, context_frame))
         capture.set(cv2.CAP_PROP_POS_MSEC, timestamp_ms)
         succeed, frame = capture.read()
         if not succeed:
@@ -236,4 +248,3 @@ def assign_monsters_map(frames: TimestampTextData) -> TimestampMapData:
         timestamp, rect, text = item
         result.append((timestamp, rect, text, map_data))
     return result
-

@@ -1,4 +1,4 @@
-from consts import TIME_LIMIT_MS
+from consts import TIME_LIMIT_MS, CONTEXT_MS
 from image_ops import (
     load_image_grayscale,
     find_contours_from_grayscale,
@@ -43,7 +43,7 @@ def run_pipeline(path: str) -> tuple | None:
 if __name__ == "__main__":
     # run_pipeline("../media/screenshots/message-coco.png")
     clean_debug_screenshots()
-    video_path = download_video("https://www.youtube.com/watch?v=tdHbQSbinhs&t=209s")
+    video_path = download_video("https://www.youtube.com/watch?v=tdHbQSbinhs&t=330s")
     print(video_path)
     found_frames = find_monsters_frames(video_path, 80500, 500)
     save_debug_crops(video_path, found_frames)
@@ -67,5 +67,8 @@ if __name__ == "__main__":
         reduced_for_crop.append((item[0], item[1]))
     save_debug_crops(video_path, reduced_for_crop, subfolder="final")
 
-    monster_locations = extract_monsters_locations(video_path, separated_frames)
-    save_monster_locations(video_path, monster_locations, subfolder="screenshots")
+    monster_locations = extract_monsters_locations(
+        video_path, separated_frames, CONTEXT_MS
+    )
+    save_monster_locations(video_path, monster_locations,
+                           subfolder="screenshots")
