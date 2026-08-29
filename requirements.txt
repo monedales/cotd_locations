@@ -4,3 +4,4 @@ pillow;
 yt-dlp;
 pytest;
 python-dotenv;
+httpx;
