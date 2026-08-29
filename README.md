@@ -22,7 +22,10 @@ python3.14 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 brew install tesseract ffmpeg
+cp .env.example .env
 ```
+
+Fill in `DISCORD_WEBHOOK_URL` in `.env` with your webhook URL.
 
 ### Running
 
@@ -39,8 +42,14 @@ cotd_locations/
 │   ├── main.py            entry point: runs the full pipeline
 │   ├── video_ops.py       download, scanning, dedup, map assignment
 │   ├── image_ops.py       generic image ops (crop, contours, OCR)
+│   ├── notifier.py        Discord webhook notification
 │   ├── data_types.py      shared type aliases
 │   └── consts.py          calibration constants
+│
+├── tools/
+│   ├── debug_roi.py       ROI/contour calibration helper
+│   └── debug_video_info.py   inspects yt-dlp metadata without
+│                              downloading the video
 │
 └── data/
     └── spot_table.json    daily monster-spot codes shared by the
@@ -95,7 +104,7 @@ flowchart TD
 - [x] Balloon detection (manual crop to geometric detection)
 - [x] Video automation (download, OCR filter, deduplication)
 - [x] Map/monster assignment by sequential order
-- [ ] Refinements (visual context, video identity fix, nightly
-      automation)
-- [ ] Discord integration
+- [ ] Refinements (nightly automation)
+- [ ] Discord integration (core sending validated, format and
+      pipeline connection in progress)
 - [ ] Automated test suite
