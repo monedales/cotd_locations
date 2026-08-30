@@ -1,4 +1,4 @@
-from consts import TIME_LIMIT_MS, CONTEXT_MS
+from consts import TIME_LIMIT_MS, CONTEXT_MS, VIDEO_URL
 from image_ops import (
     load_image_grayscale,
     find_contours_from_grayscale,
@@ -18,6 +18,8 @@ from video_ops import (
     extract_monsters_locations,
     save_monster_locations,
 )
+from notifier import notify_monster
+import os
 
 
 def run_pipeline(path: str) -> tuple | None:
@@ -43,7 +45,7 @@ def run_pipeline(path: str) -> tuple | None:
 if __name__ == "__main__":
     # run_pipeline("../media/screenshots/message-coco.png")
     clean_debug_screenshots()
-    video_path = download_video("https://www.youtube.com/watch?v=tdHbQSbinhs&t=330s")
+    video_path = download_video(VIDEO_URL)
     print(video_path)
     found_frames = find_monsters_frames(video_path, 80500, 500)
     save_debug_crops(video_path, found_frames)
@@ -72,3 +74,20 @@ if __name__ == "__main__":
     )
     save_monster_locations(video_path, monster_locations,
                            subfolder="screenshots")
+
+    video_name = os.path.splitext(os.path.basename(video_path))[0]
+    screenshots_dir = f"../media/screenshots/{video_name}/screenshots"
+
+    for index, item in enumerate(mapped_frames):
+        timestamp, rect, text, map_data = item
+
+        context_pos = index * 2
+        main_pos = index * 2 + 1
+
+        context_timestamp = monster_locations[context_pos][0]
+        main_timestamp = monster_locations[main_pos][0]
+
+        context_path = f"{screenshots_dir}/{context_timestamp}.png"
+        main_path = f"{screenshots_dir}/{main_timestamp}.png"
+
+        notify_monster(map_data, [context_path, main_path], index, video_name)

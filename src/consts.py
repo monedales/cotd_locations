@@ -31,3 +31,7 @@ MONSTER_REFERENCE_IMAGE = {
     "Naga": "naga.jpeg",
     "Boiuna": "boiuna.jpeg",
 }
+
+SPOT_TABLE_PATH = "../data/spot_table.json"
+
+VIDEO_URL = "https://www.youtube.com/watch?v=0ysV75yG_iQ"

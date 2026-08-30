@@ -2,9 +2,12 @@ from dotenv import load_dotenv
 import os
 import json
 import httpx
+from loguru import logger
 
 from consts import MONSTER_LOCATIONS_DIR, MONSTER_REFERENCE_IMAGE
 from data_types import MapData
+from exceptions import MissingImageError, SpotTableError
+from spot_table import get_spot_for_map
 
 
 def get_webhook_url() -> str:
@@ -22,8 +25,13 @@ def send_notification(message: str, image_paths: list[str]) -> httpx.Response:
 
     files = {}
     for index, image_path in enumerate(image_paths):
-        with open(image_path, "rb") as f:
-            image_bytes = f.read()
+        try:
+            with open(image_path, "rb") as f:
+                image_bytes = f.read()
+        except FileNotFoundError as exc:
+            raise MissingImageError(
+                f"Imagem não encontrada para a notificação: '{image_path}'."
+            ) from exc
         filename = os.path.basename(image_path)
         files[f"files[{index}]"] = (filename, image_bytes, "image/png")
 
@@ -46,17 +54,32 @@ def send_notification(message: str, image_paths: list[str]) -> httpx.Response:
         ) from exc
 
 
-def notify_monster(map_data: MapData, event_image_paths: list[str]) -> httpx.Response:
+def notify_monster(
+    map_data: MapData,
+    event_image_paths: list[str],
+    map_index: int,
+    date_str: str,
+) -> httpx.Response:
     map_name, monster_name = map_data
 
-    sorted_paths = sorted(event_image_paths)
-    context_path, main_path = sorted_paths
+    # quem chama passa na ordem: [contexto, principal]
+    context_path, main_path = event_image_paths
 
     reference_filename = MONSTER_REFERENCE_IMAGE[monster_name]
     reference_path = f"{MONSTER_LOCATIONS_DIR}/{reference_filename}"
 
     message = f"{map_name} - {monster_name}"
-    image_paths = [reference_path, context_path, main_path]
+    try:
+        spot = get_spot_for_map(map_index, date_str)
+        message = f"{message}\nSpot: {spot}"
+    except SpotTableError as exc:
+        logger.warning(
+            f"Não foi possível obter o spot para '{map_name}' em "
+            f"'{date_str}'. Notificação seguirá sem subtítulo.\n"
+            f"Motivo: {exc.message}"
+        )
+
+    image_paths = [main_path, context_path, reference_path]
 
     return send_notification(message, image_paths)
 
