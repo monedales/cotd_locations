@@ -18,3 +18,7 @@ class MissingImageError(PipelineError):
 
 class VideoDownloadError(PipelineError):
     pass
+
+
+class SpotTableError(PipelineError):
+    pass
