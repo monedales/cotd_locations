@@ -43,6 +43,8 @@ cotd_locations/
 │   ├── video_ops.py       download, scanning, dedup, map assignment
 │   ├── image_ops.py       generic image ops (crop, contours, OCR)
 │   ├── notifier.py        Discord webhook notification
+│   ├── spot_table.py      daily spot lookup from community data
+│   ├── exceptions.py      pipeline-specific exception hierarchy
 │   ├── data_types.py      shared type aliases
 │   └── consts.py          calibration constants
 │
@@ -58,6 +60,8 @@ cotd_locations/
 
 ## Pipeline
 
+### Detection & extraction
+
 ```mermaid
 flowchart TD
     A["download_video(url)"] --> B["find_monsters_frames<br/>(geometric detection in the ROI)"]
@@ -70,6 +74,17 @@ flowchart TD
 
     style A fill:#ece4f7,color:#3b2a54
     style H fill:#ece4f7,color:#3b2a54
+```
+
+### Notification
+
+```mermaid
+flowchart TD
+    I["notify_monster<br/>(map, monster, screenshots)"] --> J["get_spot_for_map<br/>(daily spot lookup)"]
+    J --> K["send_notification<br/>(posts to Discord webhook)"]
+
+    style I fill:#ece4f7,color:#3b2a54
+    style K fill:#ece4f7,color:#3b2a54
 ```
 
 ## Glossary
@@ -89,6 +104,8 @@ flowchart TD
 - **Deduplication**: removing repeated detections of the same
   real-world event, so only one representative screenshot per map is
   kept
+- **Webhook**: a URL that lets an external app post directly into a
+  specific Discord channel, without needing a full bot setup
 
 ## Resources
 
@@ -97,6 +114,10 @@ flowchart TD
   [pytesseract](https://github.com/madmaze/pytesseract): OCR
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp): video download
 - [ffmpeg](https://ffmpeg.org/): video and audio handling
+- [httpx](https://www.python-httpx.org/): Discord webhook requests
+- [python-dotenv](https://github.com/theskumar/python-dotenv): loads
+  secrets (webhook URL) from a local `.env` file
+- [loguru](https://github.com/Delgan/loguru): structured logging
 
 ## Status
 
@@ -105,6 +126,6 @@ flowchart TD
 - [x] Video automation (download, OCR filter, deduplication)
 - [x] Map/monster assignment by sequential order
 - [ ] Refinements (nightly automation)
-- [ ] Discord integration (core sending validated, format and
-      pipeline connection in progress)
+- [ ] Discord integration (validated end-to-end with test server;
+      swapping to the clan's real webhook)
 - [ ] Automated test suite
