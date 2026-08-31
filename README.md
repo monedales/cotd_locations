@@ -44,6 +44,8 @@ cotd_locations/
 │   ├── image_ops.py       generic image ops (crop, contours, OCR)
 │   ├── notifier.py        Discord webhook notification
 │   ├── spot_table.py      daily spot lookup from community data
+│   ├── sent_log.py        tracks which notifications were confirmed
+│   │                      sent, to avoid duplicates on re-runs
 │   ├── exceptions.py      pipeline-specific exception hierarchy
 │   ├── data_types.py      shared type aliases
 │   └── consts.py          calibration constants
@@ -54,8 +56,9 @@ cotd_locations/
 │                              downloading the video
 │
 └── data/
-    └── spot_table.json    daily monster-spot codes shared by the
-                            community
+    ├── spot_table.json    daily monster-spot codes shared by the
+    │                      community
+    └── sent_log.json      runtime state, not versioned (gitignored)
 ```
 
 ## Pipeline
@@ -87,6 +90,15 @@ flowchart TD
     style K fill:#ece4f7,color:#3b2a54
 ```
 
+Before calling `notify_monster` for each map, `main.py` checks
+`sent_log.json` to skip notifications already confirmed as sent for
+that date, and only records success after a real confirmation from
+Discord — this keeps re-running the pipeline **idempotent**: safe to
+retry without duplicating messages that already went through. A
+network timeout that happens *after* Discord already received the
+message is a known edge case that can still cause a duplicate, since
+the client never gets that confirmation.
+
 ## Glossary
 
 - **yt-dlp**: command-line tool (used here as a Python library) to
@@ -106,6 +118,10 @@ flowchart TD
   kept
 - **Webhook**: a URL that lets an external app post directly into a
   specific Discord channel, without needing a full bot setup
+- **Idempotency**: the property of an operation being safe to repeat
+  without changing the outcome beyond the first successful run —
+  here, re-running the pipeline for a date already fully notified
+  produces no new messages
 
 ## Resources
 
