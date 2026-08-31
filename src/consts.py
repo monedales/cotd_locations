@@ -34,4 +34,4 @@ MONSTER_REFERENCE_IMAGE = {
 
 SPOT_TABLE_PATH = "../data/spot_table.json"
 
-VIDEO_URL = "https://www.youtube.com/watch?v=0ysV75yG_iQ"
+VIDEO_URL = "https://www.youtube.com/watch?v=iZFHseGKdT0&t=266s"

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from consts import TIME_LIMIT_MS, CONTEXT_MS, VIDEO_URL
 from image_ops import (
     load_image_grayscale,
@@ -18,7 +20,7 @@ from video_ops import (
     extract_monsters_locations,
     save_monster_locations,
 )
-from notifier import notify_monster
+from notifier import notify_monster, send_notification
 import os
 
 
@@ -77,6 +79,10 @@ if __name__ == "__main__":
 
     video_name = os.path.splitext(os.path.basename(video_path))[0]
     screenshots_dir = f"../media/screenshots/{video_name}/screenshots"
+
+    parsed_date = datetime.strptime(video_name, "%Y-%m-%d")
+    friendly_date = parsed_date.strftime("%B %d, %Y")
+    send_notification(friendly_date, [])
 
     for index, item in enumerate(mapped_frames):
         timestamp, rect, text, map_data = item
