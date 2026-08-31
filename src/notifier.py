@@ -4,7 +4,11 @@ import json
 import httpx
 from loguru import logger
 
-from consts import MONSTER_LOCATIONS_DIR, MONSTER_REFERENCE_IMAGE
+from consts import (
+    MONSTER_LOCATIONS_DIR,
+    MONSTER_REFERENCE_IMAGE,
+    WEBHOOK_TIMEOUT_SECONDS,
+)
 from data_types import MapData
 from exceptions import MissingImageError, SpotTableError
 from spot_table import get_spot_for_map
@@ -36,7 +40,12 @@ def send_notification(message: str, image_paths: list[str]) -> httpx.Response:
         files[f"files[{index}]"] = (filename, image_bytes, "image/png")
 
     try:
-        response = httpx.post(url, data={"payload_json": text}, files=files)
+        response = httpx.post(
+            url,
+            data={"payload_json": text},
+            files=files,
+            timeout=WEBHOOK_TIMEOUT_SECONDS,
+        )
         response.raise_for_status()
         return response
 

@@ -21,6 +21,8 @@ from video_ops import (
     save_monster_locations,
 )
 from notifier import notify_monster, send_notification
+from sent_log import is_already_sent, mark_as_sent
+from loguru import logger
 import os
 
 
@@ -87,6 +89,13 @@ if __name__ == "__main__":
     for index, item in enumerate(mapped_frames):
         timestamp, rect, text, map_data = item
 
+        if is_already_sent(video_name, index):
+            logger.info(
+                f"Notificação do mapa {index} ({map_data}) em "
+                f"'{video_name}' já enviada. Pulando."
+            )
+            continue
+
         context_pos = index * 2
         main_pos = index * 2 + 1
 
@@ -96,4 +105,15 @@ if __name__ == "__main__":
         context_path = f"{screenshots_dir}/{context_timestamp}.png"
         main_path = f"{screenshots_dir}/{main_timestamp}.png"
 
-        notify_monster(map_data, [context_path, main_path], index, video_name)
+        try:
+            notify_monster(
+                map_data, [context_path, main_path], index, video_name
+            )
+            mark_as_sent(video_name, index)
+        except ValueError as exc:
+            logger.error(
+                f"Falha ao notificar o mapa {index} ({map_data}) em "
+                f"'{video_name}'. Seguindo para o próximo.\n"
+                f"Motivo: {exc}"
+            )
+            continue

@@ -33,5 +33,7 @@ MONSTER_REFERENCE_IMAGE = {
 }
 
 SPOT_TABLE_PATH = "../data/spot_table.json"
+SENT_LOG_PATH = "../data/sent_log.json"
+WEBHOOK_TIMEOUT_SECONDS = 30
 
 VIDEO_URL = "https://www.youtube.com/watch?v=iZFHseGKdT0&t=266s"
