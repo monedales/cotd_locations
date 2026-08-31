@@ -126,6 +126,6 @@ flowchart TD
 - [x] Video automation (download, OCR filter, deduplication)
 - [x] Map/monster assignment by sequential order
 - [ ] Refinements (nightly automation)
-- [ ] Discord integration (validated end-to-end with test server;
+- [x] Discord integration (validated end-to-end with test server;
       swapping to the clan's real webhook)
 - [ ] Automated test suite
